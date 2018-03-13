@@ -1,7 +1,10 @@
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize('wx-exam', 'root', '5tgbhu8', {
-  host: 'localhost',
+const sequelize = new Sequelize('wx-exam', 'winson', '2wsxdr5tgb', {
+  // 'root', '5tgbhu8', {
+  // host: 'localhost',
+  host: 'sh-cdb-qvfh765u.sql.tencentcdb.com',
+  port: '63926',
   dialect: 'mysql',
   pool: {
     max: 5,
@@ -35,6 +38,7 @@ const User = sequelize.define(
         isEmail: true
       }
     },
+    password: Sequelize.STRING(255),
     status: Sequelize.STRING(100)
   },
   { timestamps: true }

@@ -1,7 +1,7 @@
 const router = require('koa-router')();
 const db = require('../db/index.js');
 const uuid = require('node-uuid');
-const {ErrMsg} = require('./msg');
+const { ErrMsg } = require('./msg');
 
 router.prefix('/subjects');
 
@@ -26,21 +26,24 @@ router.post('/', async (ctx, next) => {
 });
 
 router.delete('/', async (ctx, next) => {
-  const data = {
-    id: uuid.v4(),
-    ...(ctx.request.body || {})
-  };
-  let sdata = await db.Subject.findById(data.id);
-  let msg = new ErrMsg();
+  // const data = {
+  //   id: uuid.v4(),
+  //   ...(ctx.request.body || {})
+  // };
+  var id = ctx.request.body.id;
+  if (id) {
+    let sdata = await db.Subject.findById(id);
+    let msg = new ErrMsg();
 
-  if (sdata) {
-    sdata.status = 'deleted';
-    if (await sdata.save()) {
-      msg.errMsg = '删除成功';
-      msg.errCode = 0;
-    } else {
-      msg.errMsg = '删除失败';
-      msg.errCode = 1000;
+    if (sdata) {
+      sdata.status = 'deleted';
+      if (await sdata.save()) {
+        msg.errMsg = '删除成功';
+        msg.errCode = 0;
+      } else {
+        msg.errMsg = '删除失败';
+        msg.errCode = 1000;
+      }
     }
   } else {
     msg.errMsg = '目标不存在。';
