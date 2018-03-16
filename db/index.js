@@ -67,7 +67,8 @@ const Answer = sequelize.define('answer', {
   content: Sequelize.STRING(300),
   sid: {
     type: Sequelize.UUID
-  }
+  },
+  status: Sequelize.STRING(100)
 });
 const CouponType = sequelize.define('coupon_type', {
   id: {

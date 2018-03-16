@@ -6,9 +6,11 @@ const { ErrMsg } = require('./msg');
 const passport = require('./passport_config');
 
 router.prefix('/users');
-router.all('/', async (ctx, next) => {
-  if (ctx.isAuthenticated()) {
-    return next();
+//  权限验证全部
+const cbs = ['/users/login'];
+router.use('/', async (ctx, next) => {
+  if (cbs.indexOf(ctx.path) != -1 || ctx.isAuthenticated()) {
+    return await next();
   } else {
     ctx.body = new ErrMsg(4000, '权限不足');
   }
@@ -36,7 +38,6 @@ router.post('/', async (ctx, next) => {
     }
   });
 });
-
 router.delete('/', async (ctx, next) => {
   const data = {
     id: uuid.v4(),
@@ -63,7 +64,6 @@ router.delete('/', async (ctx, next) => {
 
   ctx.body = msg;
 });
-
 router.put('/', async (ctx, next) => {
   const data = {
     id: uuid.v4(),
@@ -95,7 +95,6 @@ router.put('/', async (ctx, next) => {
 
   ctx.body = msg;
 });
-
 router.get('/', async (ctx, next) => {
   let userinfo = await db.User.findAll();
   ctx.body = {
@@ -114,6 +113,7 @@ router.get('/:id', async (ctx, next) => {
   }
   ctx.body = msg;
 });
+
 router.post('/login', async (ctx, next) => {
   const data = ctx.request.body;
   if (!data || !data.username || !data.password) {
@@ -128,32 +128,9 @@ router.post('/login', async (ctx, next) => {
       ctx.body = info;
     }
   })(ctx, next);
-  // var sha1 = crypto.createHash('sha1');
-  // const pwd = sha1.update('wxexam' + data.password).digest('hex');
-
-  // let userinfo = await db.sequelize
-  //   .query(
-  //     `select * from users where name='${data.name}' and password='${pwd}'`
-  //   )
-  //   .spread(res => {
-  //     return res[0];
-  //   });
-
-  // if (userinfo) {
-  //   if (userinfo.password !== pwd) {
-  //     ctx.body = new ErrMsg(1001, '账号或密码错误。');
-  //     return;
-  //   } else {
-  //     ctx.session.user = userinfo;
-  //     //   userinfo.token = ctx.session;
-  //     ctx.body = new ErrMsg(0, '登录成功', {
-  //       id: userinfo.id,
-  //       // token: ctx.session,
-  //       name: userinfo.name
-  //     });
-  //   }
-  // } else {
-  //   ctx.body = new ErrMsg(1000, '账号不存在。');
-  // }
+});
+router.post('/logout', async (ctx, next) => {
+  ctx.logout();
+  return (ctx.body = new ErrMsg(0, '账号已登出。'));
 });
 module.exports = router;

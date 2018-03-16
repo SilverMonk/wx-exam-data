@@ -5,8 +5,10 @@ const json = require('koa-json');
 const onerror = require('koa-onerror');
 const bodyparser = require('koa-bodyparser');
 const logger = require('koa-logger');
+const cors = require('koa2-cors');
 
 const index = require('./routes/index');
+const answer = require('./routes/answer');
 const users = require('./routes/users');
 const subjects = require('./routes/subject');
 
@@ -82,9 +84,27 @@ app.use(
 );
 app.use(passport.initialize());
 app.use(passport.session());
+
+// cors
+app.use(
+  cors({
+    origin: function(ctx) {
+      // if (ctx.hostname !== 'localhost') {
+      //   return false;
+      // }
+      return '*';
+    },
+    exposeHeaders: ['WWW-Authenticate', 'Server-Authorization'],
+    maxAge: 5,
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept']
+  })
+);
 // routes
-// app.use(index.routes(), index.allowedMethods());
+app.use(index.routes(), index.allowedMethods());
 app.use(users.routes(), users.allowedMethods());
+app.use(answer.routes(), answer.allowedMethods());
 app.use(subjects.routes(), subjects.allowedMethods());
 
 // error-handling
