@@ -10,7 +10,8 @@ const sequelize = new Sequelize('wx-exam', 'winson', '2wsxdr5tgb', {
     max: 5,
     min: 0,
     idle: 10000
-  }
+  },
+  timezone: '+08:00' //东八时区
 });
 
 const User = sequelize.define(
@@ -91,6 +92,7 @@ const Tag = sequelize.define('tag', {
     type: Sequelize.UUID,
     primaryKey: true
   },
+  status: Sequelize.STRING(100),
   name: Sequelize.STRING(100)
 });
 

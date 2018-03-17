@@ -4,7 +4,9 @@ const uuid = require('node-uuid');
 const querystring = require('querystring');
 const { ErrMsg } = require('./msg');
 
-router.prefix('/subjects');
+// const passport = require('./passport_config');
+
+router.prefix('/tags');
 //  权限验证全部
 const cbs = [];
 router.use('/', async (ctx, next) => {
@@ -16,46 +18,27 @@ router.use('/', async (ctx, next) => {
 });
 router.post('/', async (ctx, next) => {
   ctx.set('Content-Type', 'text/plain;charset=utf-8');
-  const sdata = ctx.request.body;
-  if (!sdata) {
-    return;
+  const params = ctx.request.body;
+  let msg = new ErrMsg();
+  let data = await db.Tag.create({
+    id: uuid.v4(),
+    status: 'normal',
+    name: params.name
+  });
+  if (data) {
+    msg.errMsg = '添加成功';
+    msg.data = data;
+  } else {
+    msg.errCode = 1001;
+    msg.errMsg = '添加失败';
   }
-  sdata.id = uuid.v4();
-  sdata.status = 'normal';
-
-  await db.sequelize
-    .transaction(async t => {
-      let info = await db.Subject.create(sdata);
-      if (sdata.answers) {
-        sdata.answers.map(async item => {
-          var ans = {
-            id: uuid.v4(),
-            content: item,
-            status: 'normal',
-            sid: info.id
-          };
-          await db.Answer.create(ans);
-        });
-      }
-      return info;
-    })
-    .then(res => {
-      debugger;
-      let msg = new ErrMsg(0, '添加成功', res);
-      return (ctx.body = msg);
-    })
-    .catch(err => {
-      debugger;
-      let msg = new ErrMsg(1001, '添加失败', res);
-      return (ctx.body = msg);
-    });
+  ctx.body = msg;
 });
-
 router.delete('/:id', async (ctx, next) => {
   let msg = new ErrMsg();
   var id = ctx.params.id;
   if (id) {
-    let sdata = await db.Subject.findOne({
+    let sdata = await db.Tag.findOne({
       where: { id, status: { $not: 'deleted' } }
     });
 
@@ -78,54 +61,21 @@ router.delete('/:id', async (ctx, next) => {
   }
   ctx.body = msg;
 });
-
 router.put('/:id', async (ctx, next) => {
   const data = ctx.request.body || {};
   let msg = new ErrMsg();
-  let qdata = await db.Subject.findById(ctx.params.id);
-
-  if (qdata) {
-    let adata = await db.Answer.findAll({
-      where: {
-        sid: qdata.id,
-        status: { $not: 'deleted' }
-      }
-    });
-    await db.sequelize
-      .transaction(async t => {
-        qdata.title = data.title;
-        qdata.tag = data.tag;
-        let tempQdata = await qdata.save();
-        data.answers.map(async (item, index) => {
-          if (adata[index]) {
-            adata[index].content = item;
-            await adata[index].save();
-          } else {
-            var ans = {
-              id: uuid.v4(),
-              content: item,
-              status: 'normal',
-              sid: qdata.id
-            };
-            adata[index] = await db.Answer.create(ans);
-          }
-        });
-      })
-      .then(res => {
-        let msg = new ErrMsg(0, '修改成功', res);
-        return (ctx.body = msg);
-      })
-      .catch(err => {
-        let msg = new ErrMsg(1001, '修改失败', res);
-        return (ctx.body = msg);
-      });
+  let tdata = await db.Tag.findById(ctx.params.id);
+  if (tdata) {
+    tdata.name = data.name;
+    let res = await tdata.save();
+    let msg = new ErrMsg(0, '修改成功', res);
+    return (ctx.body = msg);
   } else {
     msg.errCode = 2000;
     msg.errMsg = '没有指定ID记录';
     return (ctx.body = msg);
   }
 });
-// 分页列表
 router.get('/', async (ctx, next) => {
   const params = querystring.parse(ctx.req._parsedUrl.query);
   let pageNum = params.pagenum * 1 || 1;
@@ -146,7 +96,7 @@ router.get('/', async (ctx, next) => {
       }
     };
   }
-  let sdata = await db.Subject.findAndCountAll(queryData);
+  let sdata = await db.Tag.findAndCountAll(queryData);
   if (sdata) {
     msg.data = sdata;
   } else {
@@ -157,19 +107,11 @@ router.get('/', async (ctx, next) => {
 });
 
 router.get('/:id', async (ctx, next) => {
-  let qdata = await db.Subject.findById(ctx.params.id);
-  let adata = await db.Answer.findAll({
-    where: {
-      sid: qdata.id,
-      status: { $not: 'deleted' }
-    }
-  });
+  let tdata = await db.Tag.findById(ctx.params.id);
+
   let msg = new ErrMsg();
-  if (qdata) {
-    msg.data = {
-      question: qdata,
-      answers: adata
-    };
+  if (tdata) {
+    msg.data = tdata;
   } else {
     msg.errCode = 2000;
     msg.errMsg = '没有指定ID记录';

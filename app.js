@@ -9,6 +9,7 @@ const cors = require('koa2-cors');
 
 const index = require('./routes/index');
 const answer = require('./routes/answer');
+const tag = require('./routes/tag');
 const users = require('./routes/users');
 const subjects = require('./routes/subject');
 
@@ -105,6 +106,7 @@ app.use(
 app.use(index.routes(), index.allowedMethods());
 app.use(users.routes(), users.allowedMethods());
 app.use(answer.routes(), answer.allowedMethods());
+app.use(tag.routes(), tag.allowedMethods());
 app.use(subjects.routes(), subjects.allowedMethods());
 
 // error-handling
