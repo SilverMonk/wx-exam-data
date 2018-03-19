@@ -54,7 +54,7 @@ const Subject = sequelize.define('subject', {
   tag: {
     type: Sequelize.UUID
   },
-  right: {
+  standard: {
     type: Sequelize.UUID
   },
   status: Sequelize.STRING(100)

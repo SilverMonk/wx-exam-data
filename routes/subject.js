@@ -95,6 +95,7 @@ router.put('/:id', async (ctx, next) => {
       .transaction(async t => {
         qdata.title = data.title;
         qdata.tag = data.tag;
+        qdata.standard = data.standard;
         let tempQdata = await qdata.save();
         data.answers.map(async (item, index) => {
           if (adata[index]) {
