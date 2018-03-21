@@ -17,7 +17,7 @@ const session = require('koa-session-minimal');
 const MysqlSession = require('koa-mysql-session');
 
 // const mount = require('koa-mount');
-const passport = require('./routes/passport_config');
+const passport = require('./auth/passport_config');
 // error handler
 onerror(app);
 

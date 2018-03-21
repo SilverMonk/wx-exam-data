@@ -1,9 +1,10 @@
 const router = require('koa-router')();
+
 const db = require('../db/index.js');
 const uuid = require('node-uuid');
 const { ErrMsg } = require('./msg');
 
-const passport = require('./passport_config');
+const passport = require('../auth/passport_config');
 
 router.prefix('/users');
 //  权限验证全部
@@ -132,5 +133,26 @@ router.post('/login', async (ctx, next) => {
 router.post('/logout', async (ctx, next) => {
   ctx.logout();
   return (ctx.body = new ErrMsg(0, '账号已登出。'));
+});
+
+router.post('/wxlogin', async (ctx, next) => {
+  const data = ctx.request.body;
+  return passport.authenticate('wx', async function(err, user, info, status) {
+    if (info.errCode === 0) {
+      ctx.body = info;
+      return ctx.login(user);
+    } else {
+      let userinfo = await db.User.create({
+        id: uuid.v4(),
+        openid: user.openid,
+        name: user.nickName + uuid.v1(),
+        nickname: user.nickName,
+        pic: user.avatarUrl,
+        sex: user.gender + ''
+      });
+      ctx.login(userinfo);
+      return (ctx.body = new ErrMsg(0, '微信账号登录', userinfo));
+    }
+  })(ctx, next);
 });
 module.exports = router;

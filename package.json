@@ -9,7 +9,7 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "dependencies": {
-        "crypto": "^1.0.1",
+        "axios": "^0.18.0",
         "debug": "^2.6.3",
         "handlebars": "~4.0.5",
         "koa": "^2.2.0",

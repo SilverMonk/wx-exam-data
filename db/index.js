@@ -21,6 +21,9 @@ const User = sequelize.define(
       type: Sequelize.UUID,
       primaryKey: true
     },
+    openid: {
+      type: Sequelize.UUID
+    },
     name: Sequelize.STRING(100),
     nickname: Sequelize.STRING(100),
     pic: Sequelize.STRING(255),
