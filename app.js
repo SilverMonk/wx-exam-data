@@ -13,11 +13,14 @@ const tag = require('./routes/tag');
 const users = require('./routes/users');
 const subjects = require('./routes/subject');
 
-const session = require('koa-session-minimal');
-const MysqlSession = require('koa-mysql-session');
+const jwt = require('koa-jwt');
+const token = require('./auth/token');
+const secret = require('./config/secret.json');
+// const session = require('koa-session-minimal');
+// const MysqlSession = require('koa-mysql-session');
 
 // const mount = require('koa-mount');
-const passport = require('./auth/passport_config');
+
 // error handler
 onerror(app);
 
@@ -52,40 +55,15 @@ app.use(async (ctx, next) => {
   console.log(`${ctx.method} ${ctx.url} - ${ms}ms`);
 });
 
-app.proxy = true;
-// session
+// app.proxy = true;
 
-// 配置存储session信息的mysql
-let store = new MysqlSession({
-  user: 'winson',
-  password: '2wsxdr5tgb',
-  database: 'wx-exam',
-  port: '63926',
-  host: 'sh-cdb-qvfh765u.sql.tencentcdb.com'
-});
-// 存放sessionId的cookie配置
-let cookie = {
-  maxAge: '', // cookie有效时长
-  expires: '', // cookie失效时间
-  path: '', // 写cookie所在的路径
-  domain: '', // 写cookie所在的域名
-  httpOnly: '', // 是否只用于http请求中获取
-  overwrite: '', // 是否允许重写
-  secure: '',
-  sameSite: '',
-  signed: ''
-};
-// 使用session中间件
+// JWT
 app.use(
-  session({
-    key: 'SESSION_ID',
-    store: store,
-    cookie: cookie
+  jwt({ secret: secret.sign, passthrough: true }).unless({
+    path: [/^\/users\/login/]
   })
 );
-app.use(passport.initialize());
-app.use(passport.session());
-
+app.use(token());
 // cors
 app.use(
   cors({
@@ -99,7 +77,7 @@ app.use(
     maxAge: 5,
     credentials: true,
     allowMethods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'Accept']
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'Authorization']
   })
 );
 // routes

@@ -4,11 +4,16 @@ const uuid = require('node-uuid');
 const querystring = require('querystring');
 const { ErrMsg } = require('./msg');
 
+const util = require('util');
+const jwt = require('jsonwebtoken');
+const secret = require('../config/secret.json');
+const verify = util.promisify(jwt.verify);
+
 router.prefix('/subjects');
-//  权限验证全部
+// //  权限验证全部
 const cbs = [];
 router.use('/', async (ctx, next) => {
-  if (cbs.indexOf(ctx.path) != -1 || ctx.isAuthenticated()) {
+  if (cbs.indexOf(ctx.path) != -1 || ctx.user != null) {
     return await next();
   } else {
     ctx.body = new ErrMsg(4000, '权限不足');
@@ -45,8 +50,7 @@ router.post('/', async (ctx, next) => {
       return (ctx.body = msg);
     })
     .catch(err => {
-      debugger;
-      let msg = new ErrMsg(1001, '添加失败', res);
+      let msg = new ErrMsg(1001, '添加失败', err);
       return (ctx.body = msg);
     });
 });
@@ -117,7 +121,7 @@ router.put('/:id', async (ctx, next) => {
         return (ctx.body = msg);
       })
       .catch(err => {
-        let msg = new ErrMsg(1001, '修改失败', res);
+        let msg = new ErrMsg(1001, '修改失败', err);
         return (ctx.body = msg);
       });
   } else {
