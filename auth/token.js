@@ -16,6 +16,7 @@ module.exports = function() {
       if (payload != null && payload.id != null) {
         ctx.user = {
           name: payload.name,
+          identity: payload.identity,
           id: payload.id
         };
       }

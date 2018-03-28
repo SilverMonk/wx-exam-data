@@ -1,16 +1,15 @@
 const router = require('koa-router')();
 const db = require('../db/index.js');
-const uuid = require('node-uuid');
+const moment = require('moment');
 const querystring = require('querystring');
+const uuid = require('node-uuid');
 const { ErrMsg } = require('./msg');
 
-// const passport = require('./passport_config');
-
-router.prefix('/tags');
+router.prefix('/projects');
 //  权限验证全部
-const cbs = [];
+const cbs = [''];
 router.use('/', async (ctx, next) => {
-  if (cbs.indexOf(ctx.path) != -1 || ctx.isAuthenticated()) {
+  if (cbs.indexOf(ctx.path) != -1 || ctx.user != null) {
     return await next();
   } else {
     ctx.body = new ErrMsg(4000, '权限不足');
@@ -18,27 +17,27 @@ router.use('/', async (ctx, next) => {
 });
 router.post('/', async (ctx, next) => {
   ctx.set('Content-Type', 'text/plain;charset=utf-8');
-  const params = ctx.request.body;
-  let msg = new ErrMsg();
-  let data = await db.Tag.create({
-    id: uuid.v4(),
-    status: 'normal',
-    name: params.name
-  });
-  if (data) {
-    msg.errMsg = '添加成功';
-    msg.data = data;
-  } else {
-    msg.errCode = 1001;
-    msg.errMsg = '添加失败';
+  const sdata = ctx.request.body;
+  if (!sdata || !sdata.p_site || !sdata.customer || !sdata.c_contect) {
+    return (ctx.body = new ErrMsg(1001, '添加失败,缺少必输字段'));
   }
-  ctx.body = msg;
+  sdata.id = uuid.v4();
+  sdata.pno = moment().format('YYMMDDhh') + parseInt(Math.random() * 10000);
+  sdata.status = 'normal';
+
+  let info = await db.Project.create(sdata);
+  if (info) {
+    ctx.body = new ErrMsg(0, '添加成功', info);
+  } else {
+    ctx.body = new ErrMsg(1001, '添加失败');
+  }
 });
+
 router.delete('/:id', async (ctx, next) => {
   let msg = new ErrMsg();
   var id = ctx.params.id;
   if (id) {
-    let sdata = await db.Tag.findOne({
+    let sdata = await db.Project.findOne({
       where: { id, status: { $not: 'deleted' } }
     });
 
@@ -61,21 +60,28 @@ router.delete('/:id', async (ctx, next) => {
   }
   ctx.body = msg;
 });
+
 router.put('/:id', async (ctx, next) => {
   const data = ctx.request.body || {};
-  let msg = new ErrMsg();
-  let tdata = await db.Tag.findById(ctx.params.id);
-  if (tdata) {
-    tdata.name = data.name;
-    let res = await tdata.save();
-    let msg = new ErrMsg(0, '修改成功', res);
-    return (ctx.body = msg);
+
+  let pdata = await db.Project.findById(ctx.params.id);
+  if (pdata) {
+    pdata.customer = data.customer;
+    pdata.p_site = data.p_site;
+    pdata.designer = data.designer;
+    pdata.c_contect = data.c_contect;
+    pdata.d_contect = data.d_contect;
+    pdata = await pdata.save();
+    if (pdata) {
+      ctx.body = new ErrMsg(0, '修改成功', pdata);
+    } else {
+      ctx.body = new ErrMsg(1001, '修改失败');
+    }
   } else {
-    msg.errCode = 2000;
-    msg.errMsg = '没有指定ID记录';
-    return (ctx.body = msg);
+    ctx.body = new ErrMsg(2000, '没有指定ID记录');
   }
 });
+// 分页列表
 router.get('/', async (ctx, next) => {
   const params = querystring.parse(ctx.req._parsedUrl.query);
   let pageNum = params.pagenum * 1 || 1;
@@ -87,16 +93,17 @@ router.get('/', async (ctx, next) => {
   const queryData = {
     offset: (pageNum - 1) * pageSize,
     limit: pageSize,
-    order: [[order, sort]]
+    order: [[order, sort]],
+    where: {
+      status: { $not: 'deleted' }
+    }
   };
   if (keyWord) {
-    queryData.where = {
-      title: {
-        $like: `%${keyWord}%`
-      }
+    queryData.where.title = {
+      $like: `%${keyWord}%`
     };
   }
-  let sdata = await db.Tag.findAndCountAll(queryData);
+  let sdata = await db.Project.findAndCountAll(queryData);
   if (sdata) {
     msg.data = sdata;
   } else {
@@ -107,11 +114,18 @@ router.get('/', async (ctx, next) => {
 });
 
 router.get('/:id', async (ctx, next) => {
-  let tdata = await db.Tag.findById(ctx.params.id);
+  let pdata = await db.Project.findById(ctx.params.id);
+  let bdata = await db.Budget.findAll({
+    where: {
+      pid: pdata.id,
+      status: { $not: 'deleted' }
+    }
+  });
 
   let msg = new ErrMsg();
-  if (tdata) {
-    msg.data = tdata;
+  if (pdata) {
+    pdata.budgetList = bdata;
+    msg.data = pdata;
   } else {
     msg.errCode = 2000;
     msg.errMsg = '没有指定ID记录';

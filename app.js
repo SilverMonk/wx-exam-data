@@ -8,10 +8,8 @@ const logger = require('koa-logger');
 const cors = require('koa2-cors');
 
 const index = require('./routes/index');
-const answer = require('./routes/answer');
-const tag = require('./routes/tag');
 const users = require('./routes/users');
-const subjects = require('./routes/subject');
+const projects = require('./routes/projects');
 
 const jwt = require('koa-jwt');
 const token = require('./auth/token');
@@ -91,9 +89,7 @@ app.use(token());
 // routes
 app.use(index.routes(), index.allowedMethods());
 app.use(users.routes(), users.allowedMethods());
-app.use(answer.routes(), answer.allowedMethods());
-app.use(tag.routes(), tag.allowedMethods());
-app.use(subjects.routes(), subjects.allowedMethods());
+app.use(projects.routes(), projects.allowedMethods());
 
 // error-handling
 app.on('error', (err, ctx) => {
