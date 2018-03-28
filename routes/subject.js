@@ -31,15 +31,20 @@ router.post('/', async (ctx, next) => {
   await db.sequelize
     .transaction(async t => {
       let info = await db.Subject.create(sdata);
+      let standard = null;
       if (sdata.answers) {
-        sdata.answers.map(async item => {
+        let tempa = await sdata.answers.map(async (item, index) => {
           var ans = {
             id: uuid.v4(),
             content: item,
             status: 'normal',
             sid: info.id
           };
-          await db.Answer.create(ans);
+          return await db.Answer.create(ans);
+        });
+        await tempa[sdata.standard].then(async res => {
+          info.standard = res.id;
+          info.save();
         });
       }
       return info;
