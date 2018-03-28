@@ -63,7 +63,6 @@ app.use(
     path: [/^\/users\/login/]
   })
 );
-app.use(token());
 // cors
 app.use(
   cors({
@@ -80,6 +79,15 @@ app.use(
     allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'Authorization']
   })
 );
+app.use(async (ctx, next) => {
+  if (ctx.request.method == 'OPTIONS') {
+    ctx.response.status = 200;
+  } else {
+    await next();
+  }
+});
+
+app.use(token());
 // routes
 app.use(index.routes(), index.allowedMethods());
 app.use(users.routes(), users.allowedMethods());

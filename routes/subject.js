@@ -142,13 +142,14 @@ router.get('/', async (ctx, next) => {
   const queryData = {
     offset: (pageNum - 1) * pageSize,
     limit: pageSize,
-    order: [[order, sort]]
+    order: [[order, sort]],
+    where: {
+      status: { $not: 'deleted' }
+    }
   };
   if (keyWord) {
-    queryData.where = {
-      title: {
-        $like: `%${keyWord}%`
-      }
+    queryData.where.title = {
+      $like: `%${keyWord}%`
     };
   }
   let sdata = await db.Subject.findAndCountAll(queryData);

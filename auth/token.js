@@ -21,6 +21,7 @@ module.exports = function() {
       }
       await next();
     } catch (err) {
+      ctx.response.status = 200;
       ctx.body = new ErrMsg(4000, '验证失败', err);
     }
   };
