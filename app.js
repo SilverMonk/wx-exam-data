@@ -10,6 +10,8 @@ const cors = require('koa2-cors');
 const index = require('./routes/index');
 const users = require('./routes/users');
 const projects = require('./routes/projects');
+const products = require('./routes/products');
+const budgets = require('./routes/budgets');
 
 const jwt = require('koa-jwt');
 const token = require('./auth/token');
@@ -90,6 +92,8 @@ app.use(token());
 app.use(index.routes(), index.allowedMethods());
 app.use(users.routes(), users.allowedMethods());
 app.use(projects.routes(), projects.allowedMethods());
+app.use(products.routes(), products.allowedMethods());
+app.use(budgets.routes(), budgets.allowedMethods());
 
 // error-handling
 app.on('error', (err, ctx) => {

@@ -1,13 +1,13 @@
 const router = require('koa-router')();
 const db = require('../db/index.js');
-const moment = require('moment');
-const querystring = require('querystring');
 const uuid = require('node-uuid');
+const querystring = require('querystring');
 const { ErrMsg } = require('./msg');
 
-router.prefix('/projects');
+// 接口根路径
+router.prefix('/products');
 //  权限验证全部
-const cbs = [''];
+const cbs = [];
 router.use('/', async (ctx, next) => {
   if (cbs.indexOf(ctx.path) != -1 || ctx.user != null) {
     return await next();
@@ -18,14 +18,15 @@ router.use('/', async (ctx, next) => {
 router.post('/', async (ctx, next) => {
   ctx.set('Content-Type', 'text/plain;charset=utf-8');
   const sdata = ctx.request.body;
-  if (!sdata || !sdata.p_site || !sdata.customer || !sdata.c_contect) {
+  // 字段验证后
+  if (!sdata || !sdata.pname || !sdata.price) {
     return (ctx.body = new ErrMsg(1001, '添加失败,缺少必输字段'));
   }
   sdata.id = uuid.v4();
-  sdata.pno = moment().format('YYMMDDhh') + parseInt(Math.random() * 10000);
+  sdata.unit == sdata.unit || '件  ';
   sdata.status = 'normal';
 
-  let info = await db.Project.create(sdata);
+  let info = await db.Product.create(sdata);
   if (info) {
     ctx.body = new ErrMsg(0, '添加成功', info);
   } else {
@@ -37,7 +38,7 @@ router.delete('/:id', async (ctx, next) => {
   let msg = new ErrMsg();
   var id = ctx.params.id;
   if (id) {
-    let sdata = await db.Project.findOne({
+    let sdata = await db.Product.findOne({
       where: { id, status: { $not: 'deleted' } }
     });
 
@@ -64,13 +65,13 @@ router.delete('/:id', async (ctx, next) => {
 router.put('/:id', async (ctx, next) => {
   const data = ctx.request.body || {};
 
-  let pdata = await db.Project.findById(ctx.params.id);
+  let pdata = await db.Product.findById(ctx.params.id);
   if (pdata) {
-    pdata.customer = data.customer;
-    pdata.p_site = data.p_site;
-    pdata.designer = data.designer;
-    pdata.c_contect = data.c_contect;
-    pdata.d_contect = data.d_contect;
+    // 更新字段
+    pdata.pname = data.pname;
+    pdata.unit = data.unit;
+    pdata.price = data.price;
+    pdata.marks = data.marks;
     pdata = await pdata.save();
     if (pdata) {
       ctx.body = new ErrMsg(0, '修改成功', pdata);
@@ -99,11 +100,12 @@ router.get('/', async (ctx, next) => {
     }
   };
   if (keyWord) {
-    queryData.where.title = {
+    // 过滤查询 关键字字段
+    queryData.where.pname = {
       $like: `%${keyWord}%`
     };
   }
-  let sdata = await db.Project.findAndCountAll(queryData);
+  let sdata = await db.Product.findAndCountAll(queryData);
   if (sdata) {
     msg.data = sdata;
   } else {
@@ -114,22 +116,15 @@ router.get('/', async (ctx, next) => {
 });
 
 router.get('/:id', async (ctx, next) => {
-  let pdata = await db.Project.findOne({
+  let pdata = await db.Product.findOne({
     where: {
       id: ctx.params.id,
-      status: { $not: 'deleted' }
-    }
-  });
-  let bdata = await db.Budget.findAll({
-    where: {
-      pid: pdata.id,
       status: { $not: 'deleted' }
     }
   });
 
   let msg = new ErrMsg();
   if (pdata) {
-    pdata.budgetList = bdata;
     msg.data = pdata;
   } else {
     msg.errCode = 2000;
