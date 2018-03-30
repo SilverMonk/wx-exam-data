@@ -87,13 +87,14 @@ router.get('/', async (ctx, next) => {
   const queryData = {
     offset: (pageNum - 1) * pageSize,
     limit: pageSize,
-    order: [[order, sort]]
+    order: [[order, sort]],
+    where: {
+      status: { $not: 'deleted' }
+    }
   };
   if (keyWord) {
-    queryData.where = {
-      title: {
-        $like: `%${keyWord}%`
-      }
+    queryData.where.title = {
+      $like: `%${keyWord}%`
     };
   }
   let sdata = await db.Tag.findAndCountAll(queryData);
@@ -107,7 +108,12 @@ router.get('/', async (ctx, next) => {
 });
 
 router.get('/:id', async (ctx, next) => {
-  let tdata = await db.Tag.findById(ctx.params.id);
+  let tdata = await db.Tag.findOne({
+    where: {
+      id: ctx.params.id,
+      status: { $not: 'deleted' }
+    }
+  });
 
   let msg = new ErrMsg();
   if (tdata) {

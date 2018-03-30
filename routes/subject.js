@@ -168,7 +168,12 @@ router.get('/', async (ctx, next) => {
 });
 
 router.get('/:id', async (ctx, next) => {
-  let qdata = await db.Subject.findById(ctx.params.id);
+  let qdata = await db.Subject.findOne({
+    where: {
+      id: ctx.params.id,
+      status: { $not: 'deleted' }
+    }
+  });
   let adata = await db.Answer.findAll({
     where: {
       sid: qdata.id,
