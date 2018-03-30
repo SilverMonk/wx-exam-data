@@ -10,7 +10,7 @@ router.prefix('/tags');
 //  权限验证全部
 const cbs = [];
 router.use('/', async (ctx, next) => {
-  if (cbs.indexOf(ctx.path) != -1 || ctx.isAuthenticated()) {
+  if (cbs.indexOf(ctx.path) != -1 || ctx.user != null) {
     return await next();
   } else {
     ctx.body = new ErrMsg(4000, '权限不足');
