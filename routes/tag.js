@@ -93,7 +93,7 @@ router.get('/', async (ctx, next) => {
     }
   };
   if (keyWord) {
-    queryData.where.title = {
+    queryData.where.name = {
       $like: `%${keyWord}%`
     };
   }
