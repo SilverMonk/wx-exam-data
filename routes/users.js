@@ -7,10 +7,11 @@ const crypto = require('crypto');
 // const passport = require('../auth/passport_config');
 const secret = require('../config/secret.json');
 const jwt = require('jsonwebtoken');
+const wxAuth = require('../auth/wx');
 
 router.prefix('/users');
 //  权限验证全部
-const cbs = ['/users/login'];
+const cbs = ['/users/login', '/users/wxlogin'];
 router.use('/', async (ctx, next) => {
   if (cbs.indexOf(ctx.path) != -1 || ctx.user != null) {
     return await next();
@@ -118,20 +119,57 @@ router.get('/:id', async (ctx, next) => {
 });
 
 router.post('/login', async (ctx, next) => {
-  const data = ctx.request.body;
-  if (!data || !data.username) {
+  const data = ctx.request.body || {};
+  if (data.username == null && data.code == null) {
     ctx.body = new ErrMsg(1001, '账号或密码错误。');
     return;
   }
 
-  if (data.password === null) {
-    await db.User.findOne({ where: { openid: data.username } }).then(res => {
+  var sha1 = crypto.createHash('sha1');
+  const pwd = sha1.update('wxexam' + data.password).digest('hex');
+  await db.User.findOne({ where: { name: data.username } }).then(res => {
+    if (res) {
+      if (res.password !== pwd) {
+        ctx.body = new ErrMsg(4001, '密码错误');
+      } else {
+        const userToken = {
+          id: res.id,
+          name: res.name
+        };
+        const token = jwt.sign(userToken, secret.sign, { expiresIn: '1h' });
+        var outUserInfo = {
+          name: res.name,
+          openid: res.openid,
+          nickname: res.nickname,
+          pic: res.pic,
+          id: res.id,
+          token
+        };
+        ctx.body = new ErrMsg(0, '登录成功', outUserInfo);
+      }
+    } else {
+      ctx.body = new ErrMsg(4000, '未知用户');
+    }
+  });
+});
+router.post('/logout', async (ctx, next) => {
+  return (ctx.body = new ErrMsg(0, '账号已登出。'));
+});
+
+router.post('/wxlogin', async (ctx, next) => {
+  const data = ctx.request.body || {};
+  const userinfo = await wxAuth(data);
+  if (userinfo.openid) {
+    await db.User.findOne({ where: { openid: userinfo.openid } }).then(res => {
       if (res) {
         const userToken = {
           id: res.id,
           name: res.name
         };
-        const token = jwt.sign(userToken, secret.sign, { expiresIn: '24000h' });
+        // 签发token
+        const token = jwt.sign(userToken, secret.sign, {
+          expiresIn: '24000h'
+        });
         var outUserInfo = {
           name: res.name,
           openid: res.openid,
@@ -145,69 +183,18 @@ router.post('/login', async (ctx, next) => {
         ctx.body = new ErrMsg(4000, '未知用户');
       }
     });
-  } else {
-    var sha1 = crypto.createHash('sha1');
-    const pwd = sha1.update('wxexam' + data.password).digest('hex');
-    await db.User.findOne({ where: { name: data.username } }).then(res => {
-      if (res) {
-        if (res.password !== pwd) {
-          ctx.body = new ErrMsg(4001, '密码错误');
-        } else {
-          const userToken = {
-            id: res.id,
-            name: res.name
-          };
-          const token = jwt.sign(userToken, secret.sign, { expiresIn: '1h' });
-          var outUserInfo = {
-            name: res.name,
-            openid: res.openid,
-            nickname: res.nickname,
-            pic: res.pic,
-            id: res.id,
-            token
-          };
-          ctx.body = new ErrMsg(0, '登录成功', outUserInfo);
-        }
-      } else {
-        ctx.body = new ErrMsg(4000, '未知用户');
-      }
+  } else if (userinfo.nickName) {
+    var outUserInfo = await db.User.create({
+      id: uuid.v4(),
+      openid: userinfo.openid,
+      name: userinfo.nickName + uuid.v1(),
+      nickname: userinfo.nickName,
+      pic: userinfo.avatarUrl,
+      sex: userinfo.gender + ''
     });
+    ctx.body = new ErrMsg(0, '登录成功', outUserInfo);
+  } else {
+    ctx.body = new ErrMsg(3000, '微信签名有误');
   }
-
-  // 签发token
-  // return passport.authenticate('local', async (err, user, info, status) => {
-  //   if (user) {
-  //     // var tesst1 = await ctx.sessionHandler.regenerateId();
-  //     ctx.login(user);
-
-  //     ctx.body = info;
-  //   } else {
-  //     ctx.body = info;
-  //   }
-  // })(ctx, next);
-});
-router.post('/logout', async (ctx, next) => {
-  return (ctx.body = new ErrMsg(0, '账号已登出。'));
-});
-
-router.post('/wxlogin', async (ctx, next) => {
-  const data = ctx.request.body;
-  // return passport.authenticate('wx', async function(err, user, info, status) {
-  //   if (info.errCode === 0) {
-  //     ctx.body = info;
-  //     return ctx.login(user);
-  //   } else {
-  //     let userinfo = await db.User.create({
-  //       id: uuid.v4(),
-  //       openid: user.openid,
-  //       name: user.nickName + uuid.v1(),
-  //       nickname: user.nickName,
-  //       pic: user.avatarUrl,
-  //       sex: user.gender + ''
-  //     });
-  //     ctx.login(userinfo);
-  //     return (ctx.body = new ErrMsg(0, '微信账号登录', userinfo));
-  //   }
-  // })(ctx, next);
 });
 module.exports = router;

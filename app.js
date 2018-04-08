@@ -59,9 +59,10 @@ app.use(async (ctx, next) => {
 
 // JWT
 app.use(
-  jwt({ secret: secret.sign, passthrough: true }).unless({
-    path: [/^\/users\/login/]
-  })
+  jwt({ secret: secret.sign, passthrough: true })
+  // .unless({
+  //   path: [/^\/users\/login/, /^\/users\/wxlogin/]
+  // })
 );
 // cors
 app.use(
@@ -76,7 +77,7 @@ app.use(
     maxAge: 5,
     credentials: true,
     allowMethods: ['GET', 'POST', 'DELETE', 'PUT', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'Accept', 'Authorization']
+    allowHeaders: ['Content-Type', 'Authorization', 'Accept']
   })
 );
 app.use(async (ctx, next) => {
